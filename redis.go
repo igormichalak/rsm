@@ -16,7 +16,7 @@ func (rs *redisStore) Retrieve(token string) (data []byte, err error) {
 
 	data, err = redis.Bytes(conn.Do("GET", token))
 	if err == redis.ErrNil {
-		return nil, ErrNotFound
+		return nil, ErrSessionNotFound
 	} else if err != nil {
 		return nil, err
 	}
