@@ -37,16 +37,6 @@ func (sm *SessionManager) InitSession() (string, error) {
 	return s.token, nil
 }
 
-func (sm *SessionManager) DestroySession(token string) error {
-	if len(token) == 0 {
-		return ErrEmptyToken
-	}
-	if err := sm.store.Delete(token); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (sm *SessionManager) RetrieveData(token string) (map[string]any, time.Time, error) {
 	if len(token) == 0 {
 		return nil, time.Time{}, ErrEmptyToken
@@ -60,6 +50,17 @@ func (sm *SessionManager) RetrieveData(token string) (map[string]any, time.Time,
 		return nil, time.Time{}, err
 	}
 	return s.values, s.expiry, nil
+}
+
+func (sm *SessionManager) GetValue(token, key string) (any, error) {
+	if len(key) == 0 {
+		return nil, ErrEmptyValueKey
+	}
+	values, _, err := sm.RetrieveData(token)
+	if err != nil {
+		return nil, err
+	}
+	return values[key], nil
 }
 
 func (sm *SessionManager) setValues(token string, values map[string]any) error {
@@ -81,6 +82,36 @@ func (sm *SessionManager) setValues(token string, values map[string]any) error {
 	return nil
 }
 
+func (sm *SessionManager) SetValue(token, key string, v any) error {
+	if len(key) == 0 {
+		return ErrEmptyValueKey
+	}
+	values, _, err := sm.RetrieveData(token)
+	if err != nil {
+		return err
+	}
+	values[key] = v
+	if err = sm.setValues(token, values); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (sm *SessionManager) DeleteValue(token, key string) error {
+	if len(key) == 0 {
+		return ErrEmptyValueKey
+	}
+	values, _, err := sm.RetrieveData(token)
+	if err != nil {
+		return err
+	}
+	delete(values, key)
+	if err = sm.setValues(token, values); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (sm *SessionManager) RenewSession(token string) error {
 	values, _, err := sm.RetrieveData(token)
 	if err != nil {
@@ -92,13 +123,12 @@ func (sm *SessionManager) RenewSession(token string) error {
 	return nil
 }
 
-func (sm *SessionManager) GetValue(token, key string) (any, error) {
-	if len(key) == 0 {
-		return nil, ErrEmptyValueKey
+func (sm *SessionManager) DestroySession(token string) error {
+	if len(token) == 0 {
+		return ErrEmptyToken
 	}
-	values, _, err := sm.RetrieveData(token)
-	if err != nil {
-		return nil, err
+	if err := sm.store.Delete(token); err != nil {
+		return err
 	}
-	return values[key], nil
+	return nil
 }
