@@ -1,15 +1,26 @@
 package rsm
 
 import (
+	"time"
+
 	"github.com/gomodule/redigo/redis"
 )
 
 type SessionManager struct {
-	Store Store
+	store    Store
+	Lifetime time.Duration
 }
 
 func New(pool *redis.Pool) *SessionManager {
 	return &SessionManager{
-		Store: &redisStore{pool},
+		store: &redisStore{pool},
 	}
+}
+
+func (sm *SessionManager) InitSession() (string, error) {
+	token, err := generateRandomToken(32)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }
