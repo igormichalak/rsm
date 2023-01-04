@@ -14,8 +14,8 @@ type session struct {
 
 func (s *session) encodeData() ([]byte, error) {
 	x := &struct {
-		values map[string]any
-		expiry time.Time
+		Values map[string]any
+		Expiry time.Time
 	}{s.values, s.expiry}
 
 	var buf bytes.Buffer
@@ -27,15 +27,15 @@ func (s *session) encodeData() ([]byte, error) {
 
 func (s *session) decodeData(b []byte) error {
 	x := &struct {
-		values map[string]any
-		expiry time.Time
+		Values map[string]any
+		Expiry time.Time
 	}{}
 
 	r := bytes.NewReader(b)
 	if err := gob.NewDecoder(r).Decode(x); err != nil {
 		return err
 	}
-	s.values = x.values
-	s.expiry = x.expiry
+	s.values = x.Values
+	s.expiry = x.Expiry
 	return nil
 }

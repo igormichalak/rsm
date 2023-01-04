@@ -7,7 +7,7 @@ import (
 type managerError string
 
 func (e managerError) Error() string {
-	return fmt.Sprintf("rsm: %s", e)
+	return fmt.Sprintf("rsm: %s", string(e))
 }
 
 const (
