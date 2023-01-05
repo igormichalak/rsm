@@ -37,6 +37,25 @@ func (sm *SessionManager) InitSession() (string, error) {
 	return s.token, nil
 }
 
+func (sm *SessionManager) CommitSession(token string, values map[string]any) error {
+	if len(token) == 0 {
+		return ErrEmptyToken
+	}
+	s := &session{
+		token:  token,
+		values: values,
+		expiry: time.Now().Add(sm.Lifetime).UTC(),
+	}
+	data, err := s.encodeData()
+	if err != nil {
+		return err
+	}
+	if err = sm.store.Insert(s.token, data, s.expiry); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (sm *SessionManager) RetrieveData(token string) (map[string]any, time.Time, error) {
 	if len(token) == 0 {
 		return nil, time.Time{}, ErrEmptyToken
@@ -63,25 +82,6 @@ func (sm *SessionManager) GetValue(token, key string) (any, error) {
 	return values[key], nil
 }
 
-func (sm *SessionManager) setValues(token string, values map[string]any) error {
-	if len(token) == 0 {
-		return ErrEmptyToken
-	}
-	s := &session{
-		token:  token,
-		values: values,
-		expiry: time.Now().Add(sm.Lifetime).UTC(),
-	}
-	data, err := s.encodeData()
-	if err != nil {
-		return err
-	}
-	if err = sm.store.Insert(s.token, data, s.expiry); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (sm *SessionManager) SetValue(token, key string, v any) error {
 	if len(key) == 0 {
 		return ErrEmptyValueKey
@@ -91,7 +91,7 @@ func (sm *SessionManager) SetValue(token, key string, v any) error {
 		return err
 	}
 	values[key] = v
-	if err = sm.setValues(token, values); err != nil {
+	if err = sm.CommitSession(token, values); err != nil {
 		return err
 	}
 	return nil
@@ -106,7 +106,7 @@ func (sm *SessionManager) DeleteValue(token, key string) error {
 		return err
 	}
 	delete(values, key)
-	if err = sm.setValues(token, values); err != nil {
+	if err = sm.CommitSession(token, values); err != nil {
 		return err
 	}
 	return nil
@@ -117,7 +117,7 @@ func (sm *SessionManager) RenewSession(token string) error {
 	if err != nil {
 		return err
 	}
-	if err = sm.setValues(token, values); err != nil {
+	if err = sm.CommitSession(token, values); err != nil {
 		return err
 	}
 	return nil
