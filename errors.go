@@ -11,7 +11,8 @@ func (e managerError) Error() string {
 }
 
 const (
-	ErrSessionNotFound = managerError("session not found")
-	ErrEmptyToken      = managerError("the provided token is empty")
-	ErrEmptyValueKey   = managerError("the provided value key is empty")
+	ErrSessionNotFound  = managerError("session not found")
+	ErrPropertyNotFound = managerError("property not found")
+	ErrEmptyToken       = managerError("the provided token is empty")
+	ErrEmptyValueKey    = managerError("the provided value key is empty")
 )
