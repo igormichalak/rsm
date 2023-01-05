@@ -32,7 +32,7 @@ func assertNoError(t testing.TB, got error) {
 	}
 }
 
-type FakeStore struct {
+type fakeStore struct {
 	records []*struct {
 		token  string
 		data   []byte
@@ -40,7 +40,7 @@ type FakeStore struct {
 	}
 }
 
-func (fs *FakeStore) Retrieve(token string) (data []byte, err error) {
+func (fs *fakeStore) Retrieve(token string) (data []byte, err error) {
 	for _, rec := range fs.records {
 		if rec.token == token {
 			return rec.data, nil
@@ -49,7 +49,14 @@ func (fs *FakeStore) Retrieve(token string) (data []byte, err error) {
 	return nil, ErrSessionNotFound
 }
 
-func (fs *FakeStore) Insert(token string, data []byte, expiry time.Time) error {
+func (fs *fakeStore) Insert(token string, data []byte, expiry time.Time) error {
+	for _, rec := range fs.records {
+		if rec.token == token {
+			rec.data = data
+			rec.expiry = expiry
+			return nil
+		}
+	}
 	fs.records = append(fs.records, &struct {
 		token  string
 		data   []byte
@@ -58,7 +65,7 @@ func (fs *FakeStore) Insert(token string, data []byte, expiry time.Time) error {
 	return nil
 }
 
-func (fs *FakeStore) Delete(token string) error {
+func (fs *fakeStore) Delete(token string) error {
 	for i, rec := range fs.records {
 		if rec.token == token {
 			lastIndex := len(fs.records) - 1
@@ -70,17 +77,17 @@ func (fs *FakeStore) Delete(token string) error {
 }
 
 func TestFakeStore(t *testing.T) {
-	fakeStore := &FakeStore{}
-	err := fakeStore.Insert("token_1", []byte("token_1_data"), time.Now().UTC())
+	fs := &fakeStore{}
+	err := fs.Insert("token_1", []byte("token_1_data"), time.Now().UTC())
 	assertNoError(t, err)
 
-	data, err := fakeStore.Retrieve("token_1")
+	data, err := fs.Retrieve("token_1")
 	assertNoError(t, err)
 	assertEqual(t, data, []byte("token_1_data"))
 
-	err = fakeStore.Delete("token_1")
+	err = fs.Delete("token_1")
 	assertNoError(t, err)
 
-	_, err = fakeStore.Retrieve("token_1")
+	_, err = fs.Retrieve("token_1")
 	assertError(t, err, ErrSessionNotFound)
 }
