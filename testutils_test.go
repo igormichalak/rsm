@@ -3,6 +3,7 @@ package rsm
 import (
 	"errors"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 )
@@ -38,9 +39,13 @@ type fakeStore struct {
 		data   []byte
 		expiry time.Time
 	}
+	mu sync.Mutex
 }
 
 func (fs *fakeStore) Retrieve(token string) (data []byte, err error) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	for _, rec := range fs.records {
 		if rec.token == token {
 			return rec.data, nil
@@ -50,6 +55,9 @@ func (fs *fakeStore) Retrieve(token string) (data []byte, err error) {
 }
 
 func (fs *fakeStore) Insert(token string, data []byte, expiry time.Time) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	for _, rec := range fs.records {
 		if rec.token == token {
 			rec.data = data
@@ -66,6 +74,9 @@ func (fs *fakeStore) Insert(token string, data []byte, expiry time.Time) error {
 }
 
 func (fs *fakeStore) Delete(token string) error {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
+
 	for i, rec := range fs.records {
 		if rec.token == token {
 			lastIndex := len(fs.records) - 1
